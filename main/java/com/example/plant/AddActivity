@@ -13,9 +13,12 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Picture;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Gravity;
@@ -53,13 +56,13 @@ public class AddActivity extends AppCompatActivity {
     private static final int SCAN_OPEN_PHONE =2;//相册
 
 
-    private Uri imageUri1;
-    public String path1 = null;
-    Bitmap bitmap1;
-    public static String picpath1 = null;
+    private Uri imageUri;
+    public String path = null;
+    public static Bitmap bitmap ;
+    public static String picpath = null;
 
-    public double target1=0;
-    public String target_path1=null;
+    public double target=0;
+    public String target_path=null;
 
     private PopupWindow mPopWindow;
 
@@ -145,59 +148,30 @@ public class AddActivity extends AppCompatActivity {
     }
 
     private void openCamera(){
-        /**相机打开失败*/
         String imageName = new SimpleDateFormat("yyyyMMddHHmm", Locale.getDefault()).format(new Date());
-//        File outputImage=new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/data/com.example.woundapplication/"+imageName+".jpg");
+        File photoFile = new File(Environment.getExternalStorageDirectory(), imageName+".jpg");
 
-        File outputImage = new File(getExternalCacheDir(), imageName+".jpg");
-
-        Objects.requireNonNull(outputImage.getParentFile()).mkdirs();
-//        Log.e("", outputImage.getAbsolutePath());
-                /*
-                创建一个File文件对象，用于存放摄像头拍下的图片，
-                把它存放在应用关联缓存目录下，调用getExternalCacheDir()可以得到这个目录，为什么要
-                用关联缓存目录呢？由于android6.0开始，读写sd卡列为了危险权限，使用的时候必须要有权限，
-                应用关联目录则可以跳过这一步
-                 */
+        photoFile.getAbsoluteFile().mkdirs();
         try//判断图片是否存在，存在则删除在创建，不存在则直接创建
         {
-            if(outputImage.exists())
+            if(photoFile.exists())
             {
-                outputImage.delete();
+                photoFile.delete();
             }
-            boolean a = outputImage.createNewFile();
+            boolean a = photoFile.createNewFile();
             Log.e("createNewFile", String.valueOf(a));
         }
         catch (IOException e)
         {
             e.printStackTrace();
         }
-        if(Build.VERSION.SDK_INT>=24)
-            //判断安卓的版本是否高于7.0，高于则调用高于的方法，低于则调用低于的方法
-            //把文件转换成Uri对象
-                    /*
-                    因为android7.0以后直接使用本地真实路径是不安全的，会抛出异常。
-                    FileProvider是一种特殊的内容提供器，可以对数据进行保护
-                     */
-        {
-            imageUri1= FileProvider.getUriForFile(AddActivity.this,
-                    "com.example.sqlite.file-provider",outputImage);
-            //对应Mainfest中的provider
-//            imageUri=Uri.fromFile(outputImage);
-            path1 = imageUri1.getPath();
-            Log.e(">7:",path1);
-        }
-        else {
-            imageUri1 = Uri.fromFile(outputImage);
-            path1 = imageUri1.getPath();
-
-            Log.e("<7:",imageUri1.getPath());
-
-        }
+        imageUri = Uri.fromFile(photoFile);
+        path = imageUri.getPath();
+        Log.e("<7:",imageUri.getPath());
 
         //使用隐示的Intent，系统会找到与它对应的活动，即调用摄像头，并把它存储
         Intent intent0=new Intent("android.media.action.IMAGE_CAPTURE");
-        intent0.putExtra(MediaStore.EXTRA_OUTPUT,imageUri1);
+        intent0.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
         startActivityForResult(intent0,TAKE_PHOTO);
     }
 
@@ -208,23 +182,31 @@ public class AddActivity extends AppCompatActivity {
         switch (requestCode) {
             case TAKE_PHOTO:
                 if (resultCode == RESULT_OK) {
-                    //将图片解析成Bitmap对象，并把它显现出来
+                    MediaScannerConnection.scanFile(this, new String[] { imageUri.getPath() }, null, new MediaScannerConnection.OnScanCompletedListener() {
+                        public void onScanCompleted(String path, Uri uri) {
+                            Log.i("TAG", "Scanned " + path + ":");
+                            Log.i("TAG", "-> uri=" + uri);
+                        }
+                    });
+                //将图片解析成Bitmap对象，并把它显现出来
                     String filePath = getFilesDir().getAbsolutePath()+"/image.jpeg";
-                    bitmap1 = BitmapFactory.decodeFile(filePath);
+                    bitmap = BitmapFactory.decodeFile(filePath);
                     //注意bitmap，后面再decode就会为空
                     try {
-                        bitmap1 = BitmapFactory.decodeStream(getContentResolver().openInputStream(imageUri1));
+                        bitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(imageUri));
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     }
 //                        bitmap = BitmapFactory.decodeFile(picpath);
-                    picpath1 = imageUri1.getPath().toString();
-                    Log.e("", imageUri1.getAuthority());
+                    picpath = imageUri.getPath().toString();
+                    Log.e("", imageUri.getAuthority());
 
-                    Log.e("picpath",picpath1);
-                    @SuppressLint("SdCardPath") String fileName = picpath1;
-                    img_result.setImageBitmap(bitmap1);
+                    Log.e("picpath",picpath);
+                    @SuppressLint("SdCardPath") String fileName = picpath;
+                    img_result.setImageBitmap(bitmap);
                     img_result.invalidate();
+                    AddActivity.picpath = picpath;
+
                 }break;
             case SCAN_OPEN_PHONE:
                 if (resultCode == RESULT_OK){
@@ -236,11 +218,11 @@ public class AddActivity extends AppCompatActivity {
                     cursor.moveToFirst();
                     //从数据视图中获取已选择图片的路径
                     int columnIndex = cursor.getColumnIndex(FilePathColumn[0]);
-                    picpath1 = cursor.getString(columnIndex);
-                    Log.e("picpath",picpath1);
+                    picpath = cursor.getString(columnIndex);
+                    Log.e("picpath",picpath);
                     cursor.close();
-                    bitmap1 = BitmapFactory.decodeFile(picpath1);
-                    img_result.setImageBitmap(bitmap1);
+                    bitmap = BitmapFactory.decodeFile(picpath);
+                    img_result.setImageBitmap(bitmap);
                     img_result.invalidate();
                 }
                 break;
