@@ -149,7 +149,12 @@ public class AddActivity extends AppCompatActivity {
 
     private void openCamera(){
         String imageName = new SimpleDateFormat("yyyyMMddHHmm", Locale.getDefault()).format(new Date());
-        File photoFile = new File(Environment.getExternalStorageDirectory(), imageName+".jpg");
+
+        // 获取FileProvider的authority
+        String authority = "com.example.plant.file-provider";
+
+// 获取文件
+        File photoFile = new File(Environment.getExternalStorageDirectory(), imageName + ".jpg");
 
         photoFile.getAbsoluteFile().mkdirs();
         try//判断图片是否存在，存在则删除在创建，不存在则直接创建
@@ -165,7 +170,9 @@ public class AddActivity extends AppCompatActivity {
         {
             e.printStackTrace();
         }
-        imageUri = Uri.fromFile(photoFile);
+        // 获取content:// URI
+        imageUri = FileProvider.getUriForFile(this, authority, photoFile);
+
         path = imageUri.getPath();
         Log.e("<7:",imageUri.getPath());
 
