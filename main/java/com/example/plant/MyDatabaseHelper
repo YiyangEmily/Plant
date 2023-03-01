@@ -17,7 +17,7 @@ import java.net.URISyntaxException;
 
 
 class MyDatabaseHelper extends SQLiteOpenHelper {
-    private Intent intent;
+    Intent intent;
 
     private Context context;
     public void MyClass(Intent intent) {
@@ -60,9 +60,8 @@ class MyDatabaseHelper extends SQLiteOpenHelper {
         hhh.put(COLUMN_NAME,name);
         hhh.put(COLUMN_VAR,var);
         hhh.put(COLUMN_HEIGHT,height);
-        String imagePath = getIntent().getStringExtra("image_path");
 
-        //process
+        String filePath = AddActivity.picpath;
 
         long result = db.insert(TABLE_NAME,null,hhh);
         if(result == -1){
@@ -70,6 +69,7 @@ class MyDatabaseHelper extends SQLiteOpenHelper {
         }else
             Toast.makeText(context," Success1 ",Toast.LENGTH_SHORT).show();
     }
+
 
     public void updateData(String row_id, String name, String var, String height) {
         SQLiteDatabase db = this.getWritableDatabase();
