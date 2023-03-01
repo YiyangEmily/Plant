@@ -1,0 +1,118 @@
+package com.example.plant;
+
+import static android.content.Intent.getIntent;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.net.Uri;
+import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+
+import java.net.URISyntaxException;
+
+
+class MyDatabaseHelper extends SQLiteOpenHelper {
+    private Intent intent;
+
+    private Context context;
+    public void MyClass(Intent intent) {
+        this.intent = intent;
+    }
+    private static final String DATABASE_NAME = "PlantLibrary.db";
+    private static final int DATABASE_VERSION = 1;
+
+    private static final String TABLE_NAME = "my_library";
+    private static final String COLUMN_ID = "plant_id";
+    private static final String COLUMN_NAME = "plant_name";
+    private static final String COLUMN_VAR = "plant_var";
+    private static final String COLUMN_HEIGHT = "plant_height";
+    private static final String COLUMN_TARGET = "plant_target";
+
+    MyDatabaseHelper(@Nullable Context context) {
+        super(context,DATABASE_NAME,null,DATABASE_VERSION);
+        this.context = context;
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        String query = "CREATE TABLE " + TABLE_NAME +
+                " ("+ COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "+
+                COLUMN_NAME + " TEXT, "+
+                COLUMN_VAR + " TEXT, "+
+                COLUMN_HEIGHT + " INTEGER, "+
+                COLUMN_TARGET + "DOUBLE "+")";
+        db.execSQL(query);
+    }
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+        onCreate(db);
+    }
+    void addPlant(String name,String var,int height) throws URISyntaxException {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues hhh = new ContentValues();
+
+        hhh.put(COLUMN_NAME,name);
+        hhh.put(COLUMN_VAR,var);
+        hhh.put(COLUMN_HEIGHT,height);
+        String imagePath = getIntent().getStringExtra("image_path");
+
+        //process
+
+        long result = db.insert(TABLE_NAME,null,hhh);
+        if(result == -1){
+            Toast.makeText(context," Fail1",Toast.LENGTH_SHORT).show();
+        }else
+            Toast.makeText(context," Success1 ",Toast.LENGTH_SHORT).show();
+    }
+
+    public void updateData(String row_id, String name, String var, String height) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues hh = new ContentValues();
+
+        hh.put(COLUMN_ID,row_id);
+        hh.put(COLUMN_NAME,name);
+        hh.put(COLUMN_VAR,var);
+        hh.put(COLUMN_HEIGHT,height);
+
+        Uri imageUri = Uri.parse(intent.getStringExtra("imageUri"));
+        String filePath = imageUri.getPath();
+        //process
+        long result = db.update(TABLE_NAME,hh,"_id=?",new String[]{row_id});
+        if(result == -1){
+            Toast.makeText(context," Fail2 ",Toast.LENGTH_SHORT).show();
+        }else{
+            Toast.makeText(context," Success2 ",Toast.LENGTH_SHORT).show();
+        }
+
+
+    }
+    Cursor readAllData(){
+        String query = "SELECT * FROM " + TABLE_NAME;
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = null;
+        if(db != null){
+            cursor = db.rawQuery(query,null);
+        }
+        return cursor;
+    }
+    void deleteOneRow(String row_id){
+        SQLiteDatabase db = this.getWritableDatabase();
+        long result = db.delete(TABLE_NAME, "_id=?",new String[]{row_id});
+        if(result == -1){
+            Toast.makeText(context," Fail3 ",Toast.LENGTH_SHORT).show();
+        }else{
+            Toast.makeText(context," Success3 ",Toast.LENGTH_SHORT).show();
+        }
+    }
+    void deleteAllData(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL(" DELETE FROM " + TABLE_NAME);
+    }
+}
